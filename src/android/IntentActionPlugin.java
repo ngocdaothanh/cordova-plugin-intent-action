@@ -1,6 +1,7 @@
 package ngocdaothanh.cordova.plugins;
 
 import android.content.Intent;
+import android.net.Uri;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
@@ -18,7 +19,7 @@ public class IntentActionPlugin extends CordovaPlugin {
 
             Intent intent = new Intent(intentAction);
             if (args.length() == 2) {
-                setExtras(intent, args.getString(1));
+                setOptions(intent, args.getString(1));
             }
 
             this.cordova.getActivity().startActivity(intent);
@@ -29,12 +30,32 @@ public class IntentActionPlugin extends CordovaPlugin {
         return false;
     }
 
-    private void setExtras(Intent intent, String extras) throws JSONException {
-        JSONObject jsonObject = new JSONObject(extras);
-        JSONArray names = jsonObject.names();
+    private void setOptions(Intent intent, String options) throws JSONException {
+        JSONObject jsonObject = new JSONObject(options);
+
+        if (jsonObject.has("extras")) {
+            JSONObject extras = jsonObject.getJSONObject("extras");
+            setExtras(intent, extras);
+        }
+
+        if (jsonObject.has("data")) {
+            String uriString = jsonObject.getString("data");
+            Uri data = Uri.parse(uriString);
+
+            if (jsonObject.has("type")) {
+                String type = jsonObject.getString("type");
+                intent.setDataAndType(data, type);
+            } else {
+                intent.setData(data);
+            }
+        }
+    }
+
+    private void setExtras(Intent intent, JSONObject extras) throws JSONException {
+        JSONArray names = extras.names();
         for (int i = 0; i < names.length(); i++) {
             String name = names.getString(i);
-            Serializable value = (Serializable) jsonObject.get(name);
+            Serializable value = (Serializable) extras.get(name);
             intent.putExtra(name, value);
         }
     }
